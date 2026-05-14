@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Rich Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0a0a0a;--surface:#111;--surface2:#1a1a1a;--surface3:#202020;
+  --border:#222;--border2:#2a2a2a;
+  --text:#f0f0f0;--text2:#888;--text3:#444;
+  --green:#22c55e;--red:#ef4444;--accent:#e2ff00;
+  --blue:#3b82f6;--gold:#f59e0b;--purple:#a855f7;--teal:#14b8a6;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans Thai',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden}
+
+.hdr{position:sticky;top:0;z-index:100;background:rgba(10,10,10,.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:12px 18px;display:flex;align-items:center;justify-content:space-between}
+.hdr-title{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.hdr-sub{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:1px}
+.hdr-fx{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text2);text-align:right;line-height:1.4}
+.hdr-fx span{color:var(--gold);font-weight:600;font-size:13px}
+
+.nav{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:57px;z-index:99}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{flex-shrink:0;padding:11px 16px;font-size:12px;font-weight:500;color:var(--text3);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .2s,border-color .2s;white-space:nowrap;font-family:'IBM Plex Sans Thai',sans-serif}
+.nav-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+.page{display:none;padding:16px;padding-bottom:52px}
+.page.active{display:block}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px}
+.card-title{font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;margin-bottom:8px}
+.val-xl{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600;color:var(--text);letter-spacing:-.02em;line-height:1}
+.val-lg{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;color:var(--text)}
+.val-md{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text2)}
+.sub{font-size:11px;font-family:'IBM Plex Mono',monospace;margin-top:4px}
+.green{color:var(--green)}.red{color:var(--red)}.blue{color:var(--blue)}.gold{color:var(--gold)}.muted{color:var(--text3)}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.slabel{font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;margin:18px 0 10px}
+
+/* STOCK ROW */
+.stock-row{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:8px}
+.stock-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.stock-meta{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;line-height:1.6}
+.pnl-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-family:'IBM Plex Mono',monospace;font-weight:600;white-space:nowrap}
+.pnl-up{background:rgba(34,197,94,.12);color:var(--green)}
+.pnl-dn{background:rgba(239,68,68,.12);color:var(--red)}
+.pnl-flat{background:rgba(136,136,136,.1);color:var(--text3)}
+
+/* TX LIST */
+.tx-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px;display:grid;grid-template-columns:30px 1fr auto;gap:9px;align-items:start;margin-bottom:7px}
+.tx-badge{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:'IBM Plex Mono',monospace;flex-shrink:0;margin-top:2px}
+.tx-badge.buy{background:rgba(34,197,94,.12);color:var(--green)}
+.tx-badge.sell{background:rgba(239,68,68,.12);color:var(--red)}
+.tx-badge.saving{background:rgba(59,130,246,.12);color:var(--blue);font-size:9px}
+.tx-badge.withdraw{background:rgba(245,158,11,.12);color:var(--gold);font-size:9px}
+.tx-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
+.tx-meta{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;line-height:1.5}
+.tx-amt{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-align:right;white-space:nowrap}
+.tx-ds{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;text-align:right;margin-top:2px}
+.del{font-size:10px;color:var(--text3);cursor:pointer;text-align:right;margin-top:2px}
+
+.tag{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:9px;font-family:'IBM Plex Mono',monospace;font-weight:500}
+.tag-main{background:rgba(226,255,0,.1);color:var(--accent)}
+.tag-cash{background:rgba(59,130,246,.1);color:var(--blue)}
+.tag-gold{background:rgba(245,158,11,.1);color:var(--gold)}
+
+/* FORM */
+.fbox{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px}
+.ftitle{font-size:13px;font-weight:600;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.flabel{font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;margin-bottom:5px;display:block}
+.finput,.fsel{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:11px 13px;color:var(--text);font-size:14px;font-family:'IBM Plex Sans Thai',sans-serif;outline:none;-webkit-appearance:none;appearance:none;transition:border-color .2s}
+.finput:focus,.fsel:focus{border-color:var(--accent)}
+.fg{margin-bottom:12px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.btn{padding:13px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:'IBM Plex Sans Thai',sans-serif;transition:opacity .15s,transform .1s}
+.btn:active{transform:scale(.97)}
+.btn-pri{background:var(--accent);color:#0a0a0a}
+.btn-sec{background:var(--surface2);color:var(--text2);border:1px solid var(--border2)}
+.btn-red{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.btn-full{width:100%;margin-top:8px}
+
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{padding:8px 15px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text3);font-family:'IBM Plex Sans Thai',sans-serif;transition:all .15s;white-space:nowrap}
+.pill.active{background:var(--accent);color:#0a0a0a;border-color:var(--accent);font-weight:700}
+
+/* INFO BOX */
+.ibox{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px 13px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ibox-label{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace}
+.ibox-val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--gold);white-space:nowrap}
+.ibox-sub{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:2px}
+
+/* SPINNER */
+.spin{width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* CHART */
+.cbox{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.ctitle{font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;margin-bottom:14px}
+canvas{max-width:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:12px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);font-family:'IBM Plex Mono',monospace}
+.leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* MODAL */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:flex-end;justify-content:center}
+.modal.open{display:flex}
+.modal-inner{background:var(--surface);border-radius:16px 16px 0 0;width:100%;max-height:72vh;display:flex;flex-direction:column;padding:20px}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.modal-x{background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1}
+
+/* DROPDOWN */
+.dd{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;max-height:200px;overflow-y:auto;z-index:200;scrollbar-width:thin}
+.dd-item{padding:11px 13px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text);transition:background .12s}
+.dd-item:hover{background:var(--border2)}
+.dd-item:last-child{border-bottom:none}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:11px 18px;font-size:12px;color:var(--text);z-index:999;transition:transform .3s;white-space:nowrap;font-family:'IBM Plex Mono',monospace}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.empty{text-align:center;padding:36px 20px;color:var(--text3);font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.7}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page.active>*{animation:fadeUp .22s ease both}
+.page.active>*:nth-child(2){animation-delay:.04s}
+.page.active>*:nth-child(3){animation-delay:.08s}
+.page.active>*:nth-child(4){animation-delay:.12s}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+select option{background:#1a1a1a}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div>
+    <div class="hdr-title">Rich Dashboard</div>
+    <div class="hdr-sub">Portfolio Tracker</div>
+  </div>
+  <div class="hdr-fx">USD/THB<br><span id="hdr-rate">—</span></div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="showPage('overview',this)">ภาพรวม</button>
+  <button class="nav-btn" onclick="showPage('portfolio',this)">พอร์ต</button>
+  <button class="nav-btn" onclick="showPage('charts',this)">กราฟ</button>
+  <button class="nav-btn" onclick="showPage('transactions',this)">รายการ</button>
+  <button class="nav-btn" onclick="showPage('add',this)">+ เพิ่ม</button>
+</nav>
+
+<!-- ═══ OVERVIEW ═══════════════════════════════════ -->
+<div id="page-overview" class="page active">
+  <div class="card" style="border-color:#2a2a2a">
+    <div class="card-title">มูลค่าพอร์ตโฟลิโอรวม (ปัจจุบัน)</div>
+    <div class="val-xl" id="ov-total">฿0.00</div>
+    <div class="sub" id="ov-gain" style="color:var(--text3)">กำลังโหลด...</div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">ต้นทุนรวม</div>
+      <div class="val-lg" id="ov-cost">฿0.00</div>
+      <div class="sub muted" id="ov-txcount">0 รายการ</div>
+    </div>
+    <div class="card">
+      <div class="card-title">จำนวนสินทรัพย์</div>
+      <div class="val-lg" id="ov-assets">0</div>
+      <div class="sub muted" id="ov-ports">0 พอร์ต</div>
+    </div>
+  </div>
+
+  <div class="slabel">เงินสด (Cash)</div>
+  <div class="card" style="border-color:rgba(59,130,246,.2)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div class="card-title">ยอดออมสะสม</div>
+        <div class="val-lg blue" id="ov-cash-in">฿0.00</div>
+        <div class="sub muted" id="ov-cash-net">สุทธิ ฿0.00</div>
+      </div>
+      <div style="text-align:right">
+        <div class="sub green" id="ov-save-cnt">ฝาก 0</div>
+        <div class="sub red" style="margin-top:4px" id="ov-wdraw-cnt">ถอน 0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">P&amp;L รายหุ้น (ราคาปัจจุบัน)</div>
+  <div id="ov-pnl-list"><div class="empty"><span class="spin"></span><br>กำลังดึงราคา...</div></div>
+</div>
+
+<!-- ═══ PORTFOLIO ═══════════════════════════════════ -->
+<div id="page-portfolio" class="page">
+  <div class="slabel">สรุปตามพอร์ตโฟลิโอ</div>
+  <div id="port-list"><div class="empty">ยังไม่มีข้อมูล</div></div>
+  <div class="slabel">สินทรัพย์ทั้งหมด</div>
+  <div id="port-assets"><div class="empty">ยังไม่มีข้อมูล</div></div>
+</div>
+
+<!-- ═══ CHARTS ═══════════════════════════════════════ -->
+<div id="page-charts" class="page">
+  <div class="cbox">
+    <div class="ctitle">แนวโน้มการลงทุนสะสม</div>
+    <canvas id="lineChart" height="180"></canvas>
+  </div>
+  <div class="cbox">
+    <div class="ctitle">สัดส่วนพอร์ตโฟลิโอ (บาท)</div>
+    <canvas id="barChart" height="180"></canvas>
+  </div>
+  <div class="cbox">
+    <div class="ctitle">สัดส่วนหุ้นแต่ละตัว (จำนวนหน่วย)</div>
+    <canvas id="sharesDonut" height="220"></canvas>
+    <div class="legend" id="shares-legend"></div>
+  </div>
+  <div class="cbox">
+    <div class="ctitle">ต้นทุน vs มูลค่าปัจจุบัน</div>
+    <canvas id="costChart" height="220"></canvas>
+  </div>
+  <div class="slabel">สรุปรายหุ้น</div>
+  <div id="stock-table"><div class="empty"><span class="spin"></span><br>กำลังดึงราคา...</div></div>
+</div>
+
+<!-- ═══ TRANSACTIONS ════════════════════════════════ -->
+<div id="page-transactions" class="page">
+  <div class="slabel">ประวัติรายการ</div>
+  <div id="tx-list"><div class="empty">ยังไม่มีรายการ</div></div>
+  <button class="btn btn-red btn-full" style="margin-top:8px" onclick="clearAll()">ล้างข้อมูลทั้งหมด</button>
+</div>
+
+<!-- ═══ ADD ══════════════════════════════════════════ -->
+<div id="page-add" class="page">
+  <div class="fbox">
+    <div class="ftitle"><span style="color:var(--accent)">+</span> เพิ่มรายการใหม่</div>
+
+    <!-- TYPE -->
+    <div class="fg">
+      <label class="flabel">ประเภทธุรกรรม</label>
+      <div class="pills">
+        <button class="pill active" data-val="buy"      onclick="selType(this)">ซื้อ</button>
+        <button class="pill"        data-val="sell"     onclick="selType(this)">ขาย</button>
+        <button class="pill"        data-val="saving"   onclick="selType(this)">เงินออม</button>
+        <button class="pill"        data-val="withdraw" onclick="selType(this)">ถอนเงิน</button>
+      </div>
+    </div>
+
+    <!-- DATE + PORTFOLIO -->
+    <div class="frow">
+      <div class="fg">
+        <label class="flabel">วันที่</label>
+        <input type="date" class="finput" id="f-date" onchange="onDateChange()">
+      </div>
+      <div class="fg">
+        <label class="flabel">พอร์ตโฟลิโอ</label>
+        <select class="fsel" id="f-portfolio">
+          <option value="Main Portfolio">Main Port</option>
+          <option value="Cash">Cash</option>
+          <option value="Gold">Gold</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- FX RATE BOX -->
+    <div class="ibox" id="fx-box">
+      <div>
+        <div class="ibox-label">USD/THB ณ วันที่เลือก</div>
+        <div class="ibox-sub" id="fx-date-label">—</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="spin" id="fx-spin" style="display:none"></span>
+        <div class="ibox-val" id="fx-rate-val">—</div>
+      </div>
+    </div>
+
+    <!-- INVEST FIELDS -->
+    <div id="invest-fields">
+      <div class="frow">
+        <div class="fg">
+          <label class="flabel">ประเภทสินทรัพย์</label>
+          <select class="fsel" id="f-atype">
+            <option value="ETF">ETF</option>
+            <option value="STOCK">STOCK</option>
+            <option value="MF">MF</option>
+            <option value="GOLD">GOLD</option>
+            <option value="CASH">CASH</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="flabel">สกุลเงิน</label>
+          <select class="fsel" id="f-currency" onchange="onCurrencyChange()">
+            <option value="THB">THB ฿</option>
+            <option value="USD">USD $</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Asset name -->
+      <div class="fg">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <label class="flabel" style="margin:0">ชื่อสินทรัพย์ / Ticker</label>
+          <button onclick="openManageAssets()" style="font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace">จัดการ ›</button>
+        </div>
+        <div style="position:relative">
+          <input type="text" class="finput" id="f-asset" placeholder="เช่น VOO, JEPQ, TSM..."
+            autocomplete="off" oninput="filterDD(this.value)" onfocus="showDD()" onblur="hideDD()">
+          <div class="dd" id="asset-dd"></div>
+        </div>
+      </div>
+
+      <!-- Market price fetch -->
+      <div class="ibox" id="price-box">
+        <div style="flex:1;min-width:0">
+          <div class="ibox-label">ราคาตลาด <span id="price-ticker" style="color:var(--text2)"></span></div>
+          <div class="ibox-sub" id="price-src">กด "ดึง" หรือกรอกราคาเอง</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <span class="spin" id="price-spin" style="display:none"></span>
+          <div class="ibox-val" id="market-price-val">—</div>
+          <button onclick="fetchPrice()" style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:5px 9px;font-size:10px;color:var(--text2);cursor:pointer;font-family:'IBM Plex Mono',monospace;white-space:nowrap">ดึง</button>
+        </div>
+      </div>
+
+      <!-- Amount + actual price -->
+      <div class="frow">
+        <div class="fg">
+          <label class="flabel" id="f-amount-label">จำนวนเงิน (฿)</label>
+          <input type="number" class="finput" id="f-amount" placeholder="0.00" step="0.01" oninput="calcShares()">
+        </div>
+        <div class="fg">
+          <label class="flabel">ราคาที่ซื้อได้จริง</label>
+          <input type="number" class="finput" id="f-price-actual" placeholder="0.00" step="any" oninput="calcShares()">
+        </div>
+      </div>
+
+      <div class="fg">
+        <label class="flabel">จำนวนหน่วย / หุ้น (คำนวณอัตโนมัติ)</label>
+        <input type="number" class="finput" id="f-shares" placeholder="0" step="any">
+      </div>
+    </div>
+
+    <!-- CASH FIELDS -->
+    <div id="cash-fields" style="display:none">
+      <div class="fg">
+        <label class="flabel">จำนวนเงิน (฿)</label>
+        <input type="number" class="finput" id="f-cash-amount" placeholder="0.00" step="0.01">
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-sec" onclick="resetForm()">ยกเลิก</button>
+      <button class="btn btn-pri" onclick="addTx()">+ เพิ่ม</button>
+    </div>
+  </div>
+
+  <div class="cbox" style="text-align:center">
+    <div class="ctitle" style="margin-bottom:8px">ข้อมูลตัวอย่าง</div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.7">โหลดข้อมูลตัวอย่างเพื่อทดสอบระบบ</p>
+    <button class="btn btn-sec btn-full" onclick="loadSample()">โหลดตัวอย่าง</button>
+  </div>
+</div>
+
+<!-- MODAL: manage assets -->
+<div class="modal" id="modal-assets">
+  <div class="modal-inner">
+    <div class="modal-hdr">
+      <span style="font-size:13px;font-weight:600">จัดการสินทรัพย์</span>
+      <button class="modal-x" onclick="closeModal('modal-assets')">×</button>
+    </div>
+    <div id="asset-manage-list" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let txs = JSON.parse(localStorage.getItem('rdash_v3_txs') || '[]');
+let charts = {};
+let fxRate = null;
+let priceCache = {};   // SYM -> { price, currency, ts }
+let currentType = 'buy';
+
+const PORT_COLORS = { 'Main Portfolio':'#e2ff00', 'Cash':'#3b82f6', 'Gold':'#f59e0b' };
+const COLORS = ['#e2ff00','#3b82f6','#a855f7','#f59e0b','#14b8a6','#ef4444','#22c55e','#f97316','#06b6d4','#ec4899','#8b5cf6','#84cc16','#fb7185','#38bdf8'];
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f-date').value = today;
+  fetchFX(today);
+  render();
+  renderOverviewPnL();
+});
+
+// ═══════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'charts') setTimeout(() => { renderCharts(); renderStockTable(); }, 80);
+}
+
+// ═══════════════════════════════════════════════════
+// FX RATE — frankfurter.app (free, no key)
+// ═══════════════════════════════════════════════════
+async function fetchFX(dateStr) {
+  const spinEl = document.getElementById('fx-spin');
+  const rateEl = document.getElementById('fx-rate-val');
+  const dateEl = document.getElementById('fx-date-label');
+  if (spinEl) spinEl.style.display = 'inline-block';
+  try {
+    const isToday = dateStr === new Date().toISOString().split('T')[0];
+    const url = isToday
+      ? 'https://api.frankfurter.app/latest?from=USD&to=THB'
+      : `https://api.frankfurter.app/${dateStr}?from=USD&to=THB`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(7000) });
+    const data = await res.json();
+    const rate = data?.rates?.THB;
+    if (rate) {
+      fxRate = rate;
+      if (rateEl) rateEl.textContent = rate.toFixed(4);
+      if (dateEl) dateEl.textContent = isToday ? 'ล่าสุด (วันนี้)' : dateStr;
+      document.getElementById('hdr-rate').textContent = rate.toFixed(2);
+    }
+  } catch(e) {
+    if (rateEl) rateEl.textContent = 'N/A';
+  } finally {
+    if (spinEl) spinEl.style.display = 'none';
+  }
+  return fxRate;
+}
+
+async function onDateChange() {
+  const d = document.getElementById('f-date').value;
+  if (d) await fetchFX(d);
+}
+
+// ═══════════════════════════════════════════════════
+// STOCK PRICE — Yahoo Finance via allorigins proxy
+// ═══════════════════════════════════════════════════
+async function fetchTickerPrice(ticker) {
+  const sym = ticker.toUpperCase().replace(/\s/g,'');
+  if (priceCache[sym] && Date.now() - priceCache[sym].ts < 300000) {
+    return priceCache[sym]; // 5-min cache
+  }
+  try {
+    const yUrl  = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1d`;
+    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(yUrl)}`;
+    const res   = await fetch(proxy, { signal: AbortSignal.timeout(7000) });
+    const wrap  = await res.json();
+    const parsed = JSON.parse(wrap.contents);
+    const meta   = parsed?.chart?.result?.[0]?.meta;
+    if (meta?.regularMarketPrice) {
+      const entry = { price: meta.regularMarketPrice, currency: meta.currency || 'USD', sym, ts: Date.now() };
+      priceCache[sym] = entry;
+      return entry;
+    }
+  } catch(e) {}
+  return null;
+}
+
+async function fetchPrice() {
+  const ticker = document.getElementById('f-asset').value.trim();
+  if (!ticker) { showToast('⚠ ใส่ชื่อ Ticker ก่อน'); return; }
+  const spinEl  = document.getElementById('price-spin');
+  const valEl   = document.getElementById('market-price-val');
+  const srcEl   = document.getElementById('price-src');
+  const tickerEl= document.getElementById('price-ticker');
+  tickerEl.textContent = ticker.toUpperCase();
+  spinEl.style.display = 'inline-block';
+  valEl.textContent = '...';
+  const result = await fetchTickerPrice(ticker);
+  spinEl.style.display = 'none';
+  if (result) {
+    const cur = document.getElementById('f-currency').value;
+    if (result.currency === 'USD' && fxRate) {
+      valEl.textContent = `$${result.price.toFixed(2)} ≈ ฿${(result.price * fxRate).toFixed(2)}`;
+    } else {
+      valEl.textContent = `฿${result.price.toFixed(2)}`;
+    }
+    srcEl.textContent = `Yahoo Finance · ${new Date().toLocaleTimeString('th-TH')}`;
+    document.getElementById('f-price-actual').value = result.price.toFixed(2);
+    calcShares();
+  } else {
+    valEl.textContent = 'ไม่พบ';
+    srcEl.textContent = 'ลองพิมพ์ ticker แล้วกดดึงอีกครั้ง';
+    showToast('ไม่พบราคา — กรอกเองได้เลย');
+  }
+}
+
+function calcShares() {
+  const amt   = parseFloat(document.getElementById('f-amount').value) || 0;
+  const price = parseFloat(document.getElementById('f-price-actual').value) || 0;
+  const cur   = document.getElementById('f-currency').value;
+  if (amt > 0 && price > 0) {
+    let priceTHB = price;
+    if (cur === 'USD' && fxRate) priceTHB = price * fxRate;
+    document.getElementById('f-shares').value = (amt / priceTHB).toFixed(4);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// FORM
+// ═══════════════════════════════════════════════════
+function selType(el) {
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  currentType = el.dataset.val;
+  const invest = currentType === 'buy' || currentType === 'sell';
+  document.getElementById('invest-fields').style.display = invest ? 'block' : 'none';
+  document.getElementById('cash-fields').style.display   = invest ? 'none'  : 'block';
+}
+
+function onCurrencyChange() {
+  const cur = document.getElementById('f-currency').value;
+  document.getElementById('f-amount-label').textContent = cur === 'USD' ? 'จำนวนเงิน ($)' : 'จำนวนเงิน (฿)';
+  calcShares();
+}
+
+function addTx() {
+  const type      = currentType;
+  const date      = document.getElementById('f-date').value;
+  const portfolio = document.getElementById('f-portfolio').value;
+  const invest    = type === 'buy' || type === 'sell';
+  if (!date) { showToast('⚠ เลือกวันที่ด้วย'); return; }
+
+  if (invest) {
+    const asset       = document.getElementById('f-asset').value.trim();
+    const atype       = document.getElementById('f-atype').value;
+    const currency    = document.getElementById('f-currency').value;
+    const amount      = parseFloat(document.getElementById('f-amount').value);
+    const priceActual = parseFloat(document.getElementById('f-price-actual').value) || 0;
+    const shares      = parseFloat(document.getElementById('f-shares').value) || 0;
+    const fxSnap      = fxRate;
+    if (!asset || isNaN(amount) || amount <= 0) { showToast('⚠ กรอกข้อมูลให้ครบ'); return; }
+    const amountTHB = currency === 'USD' && fxSnap ? amount * fxSnap : amount;
+    txs.push({ type, date, portfolio, asset: asset.toUpperCase(), atype, currency, amount, amountTHB, priceActual, shares, fxSnap });
+  } else {
+    const amount = parseFloat(document.getElementById('f-cash-amount').value);
+    if (isNaN(amount) || amount <= 0) { showToast('⚠ กรอกจำนวนเงิน'); return; }
+    txs.push({ type, date, portfolio, amount, amountTHB: amount });
+  }
+  save(); render(); resetForm(); showToast('✓ บันทึกแล้ว');
+}
+
+function resetForm() {
+  ['f-asset','f-amount','f-cash-amount','f-price-actual','f-shares'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('market-price-val').textContent = '—';
+  document.getElementById('price-src').textContent = 'กด "ดึง" หรือกรอกราคาเอง';
+  document.getElementById('price-ticker').textContent = '';
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════════
+function render() {
+  renderOverview();
+  renderPortfolio();
+  renderTxList();
+}
+
+// ── OVERVIEW (sync part) ──────────────────────────
+function renderOverview() {
+  const buys   = txs.filter(t => t.type === 'buy');
+  const cost   = buys.reduce((s,t) => s + (t.amountTHB || t.amount || 0), 0);
+  const assets = [...new Set(buys.map(t => t.asset).filter(Boolean))];
+  const ports  = [...new Set(txs.map(t => t.portfolio))];
+
+  document.getElementById('ov-cost').textContent     = '฿' + fmt(cost);
+  document.getElementById('ov-txcount').textContent  = txs.length + ' รายการ';
+  document.getElementById('ov-assets').textContent   = assets.length;
+  document.getElementById('ov-ports').textContent    = ports.length + ' พอร์ต';
+
+  const savings   = txs.filter(t => t.type === 'saving');
+  const withdraws = txs.filter(t => t.type === 'withdraw');
+  const cashIn    = savings.reduce((s,t) => s + (t.amountTHB||t.amount||0), 0);
+  const cashOut   = withdraws.reduce((s,t) => s + (t.amountTHB||t.amount||0), 0);
+  document.getElementById('ov-cash-in').textContent   = '฿' + fmt(cashIn);
+  document.getElementById('ov-cash-net').textContent  = 'สุทธิ ฿' + fmt(cashIn - cashOut);
+  document.getElementById('ov-save-cnt').textContent  = 'ฝาก ' + savings.length;
+  document.getElementById('ov-wdraw-cnt').textContent = 'ถอน ' + withdraws.length;
+}
+
+// ── OVERVIEW P&L (async) ─────────────────────────
+async function renderOverviewPnL() {
+  const el   = document.getElementById('ov-pnl-list');
+  const buys = txs.filter(t => t.type === 'buy' && t.asset);
+  if (!buys.length) { el.innerHTML = '<div class="empty">ยังไม่มีข้อมูลการลงทุน</div>'; return; }
+  el.innerHTML = '<div class="empty"><span class="spin"></span><br>กำลังดึงราคา...</div>';
+
+  // Aggregate by asset
+  const byAsset = {};
+  buys.forEach(t => {
+    const s = t.asset.toUpperCase();
+    if (!byAsset[s]) byAsset[s] = { cost: 0, shares: 0, currency: t.currency || 'THB' };
+    byAsset[s].cost   += (t.amountTHB || t.amount || 0);
+    byAsset[s].shares += (t.shares || 0);
+  });
+
+  // Fetch all prices concurrently
+  const items = await Promise.all(
+    Object.entries(byAsset).map(async ([sym, d]) => {
+      const result = await fetchTickerPrice(sym);
+      return { sym, ...d, result };
+    })
+  );
+
+  let totalCurr = 0, totalCost = 0;
+
+  const rows = items.sort((a,b) => b.cost - a.cost).map(r => {
+    const { sym, cost, shares, currency, result } = r;
+    totalCost += cost;
+    let curVal = cost, priceDisp = '—', pnlPct = null, pnlAmt = null;
+
+    if (result && shares > 0) {
+      let pTHB = result.price;
+      if ((result.currency === 'USD' || currency === 'USD') && fxRate) pTHB = result.price * fxRate;
+      curVal = shares * pTHB;
+      pnlAmt = curVal - cost;
+      pnlPct = cost > 0 ? pnlAmt / cost * 100 : 0;
+      priceDisp = result.currency === 'USD' ? `$${result.price.toFixed(2)}` : `฿${result.price.toFixed(2)}`;
+      totalCurr += curVal;
+    } else {
+      totalCurr += cost;
+    }
+
+    const cls  = pnlPct === null ? 'pnl-flat' : pnlPct >= 0 ? 'pnl-up' : 'pnl-dn';
+    const pStr = pnlPct === null ? '—' : `${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%`;
+    const aStr = pnlAmt !== null ? `${pnlAmt >= 0 ? '+' : ''}฿${fmt(Math.abs(pnlAmt))}` : '';
+
+    return `<div class="stock-row">
+      <div>
+        <div class="stock-name">${sym}</div>
+        <div class="stock-meta">${shares > 0 ? fmtN(shares, 4) + ' หน่วย · ' : ''}ต้นทุน ฿${fmt(cost)}</div>
+        <div class="stock-meta">ราคาตลาด: ${priceDisp}${curVal !== cost ? ' · มูลค่า ฿' + fmt(curVal) : ''}</div>
+      </div>
+      <div style="text-align:right">
+        <span class="pnl-badge ${cls}">${pStr}</span>
+        ${aStr ? `<div style="font-size:11px;margin-top:4px;font-family:'IBM Plex Mono',monospace;color:${pnlAmt>=0?'var(--green)':'var(--red)'}">${aStr}</div>` : ''}
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = rows.join('');
+
+  // Update total card
+  const gain    = totalCurr - totalCost;
+  const gainPct = totalCost > 0 ? gain / totalCost * 100 : 0;
+  const cashNet = txs.filter(t=>t.type==='saving').reduce((s,t)=>s+(t.amountTHB||t.amount||0),0)
+                - txs.filter(t=>t.type==='withdraw').reduce((s,t)=>s+(t.amountTHB||t.amount||0),0);
+  document.getElementById('ov-total').textContent = '฿' + fmt(totalCurr + cashNet);
+  const gainEl = document.getElementById('ov-gain');
+  gainEl.textContent = `${gain >= 0 ? '+' : ''}฿${fmt(Math.abs(gain))} (${gainPct >= 0 ? '+' : ''}${gainPct.toFixed(2)}%)`;
+  gainEl.className = 'sub ' + (gain >= 0 ? 'green' : 'red');
+}
+
+// ── PORTFOLIO PAGE ────────────────────────────────
+function renderPortfolio() {
+  // By portfolio card
+  const portEl = document.getElementById('port-list');
+  const byPort = {};
+  txs.forEach(t => {
+    if (!byPort[t.portfolio]) byPort[t.portfolio] = 0;
+    const sign = (t.type === 'buy' || t.type === 'saving') ? 1 : -1;
+    byPort[t.portfolio] += sign * (t.amountTHB || t.amount || 0);
+  });
+  const portTotal = Object.values(byPort).reduce((s,v) => s + Math.max(0,v), 0);
+  portEl.innerHTML = Object.keys(byPort).length === 0
+    ? '<div class="empty">ยังไม่มีข้อมูล</div>'
+    : Object.entries(byPort).sort((a,b) => b[1]-a[1]).map(([name, val]) => {
+        const pct = portTotal > 0 ? (val/portTotal*100).toFixed(1) : 0;
+        const col = PORT_COLORS[name] || '#888';
+        return `<div class="card" style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:9px;color:var(--text3);font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;margin-bottom:3px">${name.toUpperCase()}</div>
+              <div class="val-lg">฿${fmt(Math.max(0,val))}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="color:${col};font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px">${pct}%</div>
+              <div style="width:50px;height:3px;background:var(--border2);border-radius:2px;margin-top:6px;overflow:hidden">
+                <div style="width:${pct}%;height:100%;background:${col};border-radius:2px"></div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+
+  // Asset list
+  const assetEl = document.getElementById('port-assets');
+  const byAsset = {};
+  txs.filter(t => t.type === 'buy' && t.asset).forEach(t => {
+    const s = t.asset.toUpperCase();
+    if (!byAsset[s]) byAsset[s] = { cost: 0, shares: 0, atype: t.atype||'', port: t.portfolio };
+    byAsset[s].cost   += (t.amountTHB || t.amount || 0);
+    byAsset[s].shares += (t.shares || 0);
+  });
+  assetEl.innerHTML = Object.keys(byAsset).length === 0
+    ? '<div class="empty">ยังไม่มีสินทรัพย์</div>'
+    : Object.entries(byAsset).sort((a,b) => b[1].cost-a[1].cost).map(([sym, d]) => {
+        const cls = d.port.includes('Main') ? 'tag-main' : d.port.includes('Cash') ? 'tag-cash' : 'tag-gold';
+        return `<div class="tx-item">
+          <div class="tx-badge buy">${(d.atype||'?').substring(0,2)}</div>
+          <div>
+            <div class="tx-name">${sym}</div>
+            <div class="tx-meta">${d.shares > 0 ? fmtN(d.shares,4)+' หน่วย · ' : ''}<span class="tag ${cls}">${d.port.split(' ')[0]}</span></div>
+          </div>
+          <div>
+            <div class="tx-amt">฿${fmt(d.cost)}</div>
+            <div class="tx-ds">ต้นทุนรวม</div>
+          </div>
+        </div>`;
+      }).join('');
+}
+
+// ── TRANSACTIONS LIST ─────────────────────────────
+function renderTxList() {
+  const el = document.getElementById('tx-list');
+  if (!txs.length) { el.innerHTML = '<div class="empty">ยังไม่มีรายการ</div>'; return; }
+  const LABELS = { buy:'B', sell:'S', saving:'ออม', withdraw:'ถอน' };
+  el.innerHTML = [...txs].sort((a,b) => new Date(b.date) - new Date(a.date)).map(t => {
+    const idx = txs.indexOf(t);
+    const d   = new Date(t.date).toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'2-digit' });
+    const cls = t.portfolio.includes('Main') ? 'tag-main' : t.portfolio.includes('Cash') ? 'tag-cash' : 'tag-gold';
+    const inv = t.type === 'buy' || t.type === 'sell';
+    const sharesStr = inv && t.shares ? ` · ${fmtN(t.shares,4)} หน่วย` : '';
+    const priceStr  = inv && t.priceActual ? ` @${t.currency==='USD'?'$':'฿'}${t.priceActual}` : '';
+    const fxStr     = inv && t.fxSnap && t.currency==='USD' ? ` (FX ${t.fxSnap.toFixed(2)})` : '';
+    const dispAmt   = t.currency==='USD' ? `$${fmt(t.amount)}` : `฿${fmt(t.amountTHB||t.amount)}`;
+    return `<div class="tx-item">
+      <div class="tx-badge ${t.type}">${LABELS[t.type]||t.type}</div>
+      <div>
+        <div class="tx-name">${t.asset || t.type}</div>
+        <div class="tx-meta"><span class="tag ${cls}">${t.portfolio.split(' ')[0]}</span>${sharesStr}${priceStr}${fxStr}</div>
+      </div>
+      <div>
+        <div class="tx-amt ${t.type==='sell'||t.type==='withdraw'?'red':''}">${dispAmt}</div>
+        <div class="tx-ds">${d}</div>
+        <div class="del" onclick="deleteTx(${idx})">✕</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════════
+function renderCharts() {
+  const g = { grid:'#1e1e1e', color:'#555', font:"'IBM Plex Mono',monospace" };
+  Chart.defaults.color = g.color;
+  Chart.defaults.font.family = g.font;
+  Chart.defaults.font.size = 10;
+
+  // Line — cumulative
+  const monthly = {};
+  txs.filter(t => t.type === 'buy').forEach(t => {
+    const m = t.date.substring(0,7);
+    monthly[m] = (monthly[m]||0) + (t.amountTHB||t.amount||0);
+  });
+  const months = Object.keys(monthly).sort();
+  let run = 0;
+  const cumData = months.map(m => { run += monthly[m]; return run; });
+  const mLabels = months.map(m => new Date(m+'-01').toLocaleDateString('th-TH',{month:'short',year:'2-digit'}));
+
+  if (charts.line) charts.line.destroy();
+  charts.line = new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels: mLabels.length ? mLabels : ['ไม่มีข้อมูล'],
+      datasets: [{ data: cumData.length ? cumData : [0], borderColor:'#e2ff00',
+        backgroundColor:'rgba(226,255,0,.05)', fill:true, tension:.4,
+        pointRadius:4, pointBackgroundColor:'#e2ff00', borderWidth:2 }]
+    },
+    options: { responsive:true, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:g.grid}}, y:{grid:{color:g.grid}} } }
+  });
+
+  // Bar — by portfolio
+  const byPort = {};
+  txs.forEach(t => {
+    if (!byPort[t.portfolio]) byPort[t.portfolio] = 0;
+    byPort[t.portfolio] += ((t.type==='buy'||t.type==='saving')?1:-1) * (t.amountTHB||t.amount||0);
+  });
+  const pN = Object.keys(byPort), pV = pN.map(n=>Math.max(0,byPort[n])), pC = pN.map(n=>PORT_COLORS[n]||'#888');
+  if (charts.bar) charts.bar.destroy();
+  charts.bar = new Chart(document.getElementById('barChart'), {
+    type:'bar',
+    data:{ labels:pN.length?pN.map(n=>n.split(' ')[0]):['—'],
+           datasets:[{data:pV.length?pV:[0], backgroundColor:pC.map(c=>c+'88'), borderColor:pC, borderWidth:1, borderRadius:6}] },
+    options:{ responsive:true, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:g.grid}}, y:{grid:{color:g.grid}} } }
+  });
+
+  // Donut — shares
+  const byAsset = {};
+  txs.filter(t=>t.type==='buy'&&t.asset).forEach(t=>{
+    const s = t.asset.toUpperCase();
+    if (!byAsset[s]) byAsset[s] = {shares:0, cost:0};
+    byAsset[s].shares += (t.shares||0);
+    byAsset[s].cost   += (t.amountTHB||t.amount||0);
+  });
+  const aNames  = Object.keys(byAsset).filter(k=>byAsset[k].shares>0);
+  const aShares = aNames.map(k=>parseFloat(byAsset[k].shares.toFixed(4)));
+  const aCols   = COLORS.slice(0,aNames.length);
+
+  if (charts.donut) charts.donut.destroy();
+  charts.donut = new Chart(document.getElementById('sharesDonut'), {
+    type:'doughnut',
+    data:{ labels: aNames.length?aNames:['ไม่มีข้อมูล'],
+           datasets:[{data:aShares.length?aShares:[1], backgroundColor:aNames.length?aCols:['#222'],
+                      borderColor:'#0a0a0a', borderWidth:3, hoverOffset:6}] },
+    options:{ responsive:true, cutout:'60%', plugins:{legend:{display:false}} }
+  });
+  document.getElementById('shares-legend').innerHTML = aNames.map((n,i)=>
+    `<div class="leg-item"><div class="leg-dot" style="background:${aCols[i]}"></div>${n} (${fmtN(byAsset[n].shares,2)})</div>`
+  ).join('');
+
+  // Cost vs Current bar (use cache)
+  const cvLabels=[], costArr=[], curArr=[];
+  Object.entries(byAsset).forEach(([sym,d])=>{
+    cvLabels.push(sym);
+    costArr.push(parseFloat(d.cost.toFixed(2)));
+    const c = priceCache[sym];
+    if (c && d.shares>0) {
+      let pTHB = c.price;
+      if (c.currency==='USD' && fxRate) pTHB = c.price * fxRate;
+      curArr.push(parseFloat((d.shares * pTHB).toFixed(2)));
+    } else {
+      curArr.push(parseFloat(d.cost.toFixed(2)));
+    }
+  });
+
+  if (charts.cost) charts.cost.destroy();
+  charts.cost = new Chart(document.getElementById('costChart'), {
+    type:'bar',
+    data:{
+      labels: cvLabels.length?cvLabels:['ไม่มีข้อมูล'],
+      datasets:[
+        {label:'ต้นทุน',    data:costArr, backgroundColor:'rgba(136,136,136,.25)', borderColor:'#444', borderWidth:1, borderRadius:4},
+        {label:'ปัจจุบัน', data:curArr,  backgroundColor:'rgba(226,255,0,.2)',    borderColor:'#e2ff00', borderWidth:1, borderRadius:4}
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:true,labels:{color:'#666',boxWidth:10,font:{size:10}}}},
+      scales:{x:{grid:{color:g.grid}},y:{grid:{color:g.grid}}}
+    }
+  });
+}
+
+// ── STOCK TABLE (async) ───────────────────────────
+async function renderStockTable() {
+  const el = document.getElementById('stock-table');
+  const byAsset = {};
+  txs.filter(t=>t.type==='buy'&&t.asset).forEach(t=>{
+    const s = t.asset.toUpperCase();
+    if (!byAsset[s]) byAsset[s] = {cost:0, shares:0, currency:t.currency||'THB', atype:t.atype||''};
+    byAsset[s].cost   += (t.amountTHB||t.amount||0);
+    byAsset[s].shares += (t.shares||0);
+  });
+  if (!Object.keys(byAsset).length) { el.innerHTML='<div class="empty">ยังไม่มีข้อมูล</div>'; return; }
+  el.innerHTML = '<div class="empty"><span class="spin"></span></div>';
+
+  const rows = await Promise.all(Object.entries(byAsset).map(async ([sym,d])=>{
+    const res = await fetchTickerPrice(sym);
+    let curVal=d.cost, priceDisp='—', pnlPct=null, pnlAmt=null;
+    if (res && d.shares>0) {
+      let pTHB = res.price;
+      if ((res.currency==='USD'||d.currency==='USD') && fxRate) pTHB = res.price * fxRate;
+      curVal = d.shares * pTHB;
+      pnlAmt = curVal - d.cost;
+      pnlPct = d.cost>0 ? pnlAmt/d.cost*100 : 0;
+      priceDisp = res.currency==='USD' ? `$${res.price.toFixed(2)} (฿${(res.price*fxRate).toFixed(2)})` : `฿${res.price.toFixed(2)}`;
+    }
+    const cls  = pnlPct===null?'pnl-flat':pnlPct>=0?'pnl-up':'pnl-dn';
+    const pStr = pnlPct===null?'—':`${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%`;
+    const avgCost = d.shares>0 ? d.cost/d.shares : 0;
+    return `<div class="stock-row">
+      <div>
+        <div class="stock-name">${sym} <span style="font-size:9px;color:var(--text3)">[${d.atype}]</span></div>
+        <div class="stock-meta">ถือ ${fmtN(d.shares,4)} หน่วย</div>
+        <div class="stock-meta">ต้นทุน/หน่วย ฿${fmt(avgCost)} · รวม ฿${fmt(d.cost)}</div>
+        <div class="stock-meta">ราคาตลาด ${priceDisp}</div>
+        <div class="stock-meta">มูลค่าปัจจุบัน ฿${fmt(curVal)}</div>
+      </div>
+      <div style="text-align:right">
+        <span class="pnl-badge ${cls}">${pStr}</span>
+        ${pnlAmt!==null?`<div style="font-size:11px;margin-top:5px;font-family:'IBM Plex Mono',monospace;color:${pnlAmt>=0?'var(--green)':'var(--red)'}">
+          ${pnlAmt>=0?'+':''}฿${fmt(Math.abs(pnlAmt))}</div>`:''}
+      </div>
+    </div>`;
+  }));
+  el.innerHTML = rows.join('');
+  // Refresh cost chart with live prices
+  renderCharts();
+}
+
+// ═══════════════════════════════════════════════════
+// ASSET AUTOCOMPLETE
+// ═══════════════════════════════════════════════════
+let hideTimer = null;
+const getAssets = () => [...new Set(txs.filter(t=>t.asset).map(t=>t.asset.toUpperCase()))].sort();
+
+function showDD() { clearTimeout(hideTimer); renderDD(document.getElementById('f-asset').value); }
+function hideDD() { hideTimer = setTimeout(()=>{ document.getElementById('asset-dd').style.display='none'; },180); }
+function filterDD(v) { clearTimeout(hideTimer); renderDD(v); }
+function renderDD(q) {
+  const all = getAssets();
+  const filtered = q.trim() ? all.filter(a=>a.toLowerCase().includes(q.toLowerCase())) : all;
+  const dd = document.getElementById('asset-dd');
+  if (!filtered.length) { dd.style.display='none'; return; }
+  dd.innerHTML = filtered.map(a=>`<div class="dd-item" onmousedown="pickAsset('${a}')">${a}</div>`).join('');
+  dd.style.display = 'block';
+}
+function pickAsset(name) {
+  document.getElementById('f-asset').value = name;
+  document.getElementById('asset-dd').style.display = 'none';
+  document.getElementById('price-ticker').textContent = name;
+}
+
+// ═══════════════════════════════════════════════════
+// MANAGE ASSETS MODAL
+// ═══════════════════════════════════════════════════
+function openManageAssets() {
+  const assets = getAssets();
+  const el = document.getElementById('asset-manage-list');
+  el.innerHTML = assets.length === 0
+    ? '<div class="empty">ยังไม่มีสินทรัพย์</div>'
+    : assets.map(a => `
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px">
+        <span style="font-size:13px">${a}</span>
+        <button onmousedown="deleteAsset('${a}')"
+          style="background:rgba(239,68,68,.1);border:none;color:var(--red);border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer;font-family:'IBM Plex Mono',monospace">ลบ</button>
+      </div>`).join('');
+  document.getElementById('modal-assets').classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function deleteAsset(name) {
+  if (!confirm(`ลบ "${name}" และรายการทั้งหมดที่เกี่ยวข้อง?`)) return;
+  txs = txs.filter(t => !t.asset || t.asset.toUpperCase() !== name.toUpperCase());
+  save(); render(); openManageAssets(); showToast(`ลบ ${name} แล้ว`);
+}
+
+// ═══════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════
+function deleteTx(idx) {
+  if (!confirm('ลบรายการนี้?')) return;
+  txs.splice(idx,1); save(); render(); showToast('ลบแล้ว');
+}
+function clearAll() {
+  if (!confirm('ล้างข้อมูลทั้งหมด?')) return;
+  txs=[]; save(); render(); showToast('ล้างแล้ว');
+}
+function save() { localStorage.setItem('rdash_v3_txs', JSON.stringify(txs)); }
+function fmt(n) {
+  const v = typeof n==='string'?parseFloat(n):n;
+  if (isNaN(v)) return '0.00';
+  return v.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtN(n,d=2) {
+  if (isNaN(n)) return '0';
+  return parseFloat(n.toFixed(d)).toLocaleString('th-TH',{minimumFractionDigits:0,maximumFractionDigits:d});
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════════════
+// SAMPLE DATA
+// ═══════════════════════════════════════════════════
+function loadSample() {
+  if (txs.length>0 && !confirm('โหลดตัวอย่างทับข้อมูลเดิม?')) return;
+  txs = [
+    { type:'buy',  date:'2025-12-01', portfolio:'Main Portfolio', asset:'VOO',        atype:'ETF',   currency:'USD', amount:120,  amountTHB:4020, priceActual:500.0, shares:0.2399, fxSnap:33.5 },
+    { type:'buy',  date:'2026-01-10', portfolio:'Main Portfolio', asset:'JEPQ',       atype:'ETF',   currency:'USD', amount:80,   amountTHB:2728, priceActual:55.2,  shares:1.4493, fxSnap:34.1 },
+    { type:'buy',  date:'2026-01-15', portfolio:'Cash',           asset:'KKP MP',     atype:'MF',    currency:'THB', amount:2000, amountTHB:2000, priceActual:10.5,  shares:190.476,fxSnap:34.1 },
+    { type:'buy',  date:'2026-02-05', portfolio:'Main Portfolio', asset:'TSM',        atype:'STOCK', currency:'USD', amount:100,  amountTHB:3410, priceActual:170.0, shares:0.5882, fxSnap:34.1 },
+    { type:'buy',  date:'2026-02-10', portfolio:'Gold',           asset:'MTS-GOLD',   atype:'GOLD',  currency:'THB', amount:1000, amountTHB:1000, priceActual:3200,  shares:0.3125, fxSnap:34.2 },
+    { type:'buy',  date:'2026-03-10', portfolio:'Main Portfolio', asset:'VOO',        atype:'ETF',   currency:'USD', amount:120,  amountTHB:4128, priceActual:492.0, shares:0.2439, fxSnap:34.4 },
+    { type:'buy',  date:'2026-03-25', portfolio:'Gold',           asset:'MTS-GOLD',   atype:'GOLD',  currency:'THB', amount:878,  amountTHB:878,  priceActual:3150,  shares:0.2787, fxSnap:34.5 },
+    { type:'saving',  date:'2026-01-01', portfolio:'Cash', amount:5000, amountTHB:5000 },
+    { type:'saving',  date:'2026-02-01', portfolio:'Cash', amount:5000, amountTHB:5000 },
+    { type:'withdraw',date:'2026-03-01', portfolio:'Cash', amount:2000, amountTHB:2000 },
+  ];
+  save(); render(); renderOverviewPnL(); showToast('✓ โหลดตัวอย่างแล้ว');
+}
+</script>
+</body>
+</html>
